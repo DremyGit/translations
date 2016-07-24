@@ -251,3 +251,75 @@ var list2 = list1.withMutations(function (list) {
 不可变数据结构导致了天生的内存使用不稳定。在每次修改之后，都要进行拷贝操作。如果这些拷贝是不必须的，垃圾回收器会在下一次清理中回收旧的数据碎片。只要旧的、未被使用的数据拷贝未被回收，就会导致这样的情况发生。在需要持久化的情况下就不会发生这样的情况。
 
 你可能已经注意到了，当考虑持久化的时候，不可变就变得非常有吸引力。
+
+## 示例：React DBMon跑分
+
+以[我们之前的进行过的跑分](https://auth0.com/blog/2016/01/11/updated-and-improved-more-benchmarks-virtual-dom-vs-angular-12-vs-mithril-js-vs-the-rest/)为基础，我们决定在合适的地方使用Immutable.js来更新我们的React DBMon跑分。从实质上来讲，在每一次的迭代之后都会更新所有的数据，选择React+Immutable.js并不会获得什么优势：在状态改变后，不可变使得React能够避免深度相等检查，如果所有的状态在每一次迭代后都进行了修改，那么不可能会让这有什么优势。因此，我们修改例子，随机跳过一些状态修改。
+
+```js
+// 通过跳过一些更新来测试重新渲染状态检查
+var skip = Math.random() >= 0.25;
+
+Object.keys(newData.databases).forEach(function (dbname) {
+    if (skip) {
+        return;
+    }
+
+    //(...)
+});
+```
+
+我们改变数据结构，把例子中原有的Javascript数组改变为不可变List。这个List作为一个参数传入一个待渲染的组件中。当React的PureRenderMixin被加入到这个组件中后，就可能使比较更有效率。
+
+```js
+if (!this.state.databases[dbname]) {
+    this.state.databases[dbname] = {
+        name: dbname,
+        samples: Immutable.List()
+    };
+}
+
+this.state.databases[dbname].samples =
+    this.state.databases[dbname].samples.push({
+        time: newData.start_at,
+        queries: sampleInfo.queries
+    });
+if (this.state.databases[dbname].samples.size > 5) {
+    this.state.databases[dbname].samples =
+        this.state.databases[dbname].samples.skip(
+            this.state.databases[dbname].samples.size - 5);
+}
+```
+
+```js
+var Database = React.createClass({
+    displayName: "Database",
+
+    mixins: [React.PureRenderMixin],
+
+    render: function render() {
+      //(...)
+    }
+    //(...)
+});
+```
+
+这种情况包含了不可变的所有优势。如果数据没有被修改，那么就不需要再对DOM树进行重绘。
+
+和我们之前的跑分一样，我们使用browser-perf来检测它们的差异，这是Javascript代码运行的总时间：
+
+![](https://cdn.auth0.com/blog/immutablejs/chart.svg)
+
+可以在[这里查看完整的跑分情况](https://github.com/auth0/blog-immutable-js-dbmon-react)
+
+## 题外话：在Auth0中Immutable.js的运用
+
+爱的Auth0，我们总是尝试使用新库，Immutable.js也不例外。在我们的lock-next（我们的下一代lock库，仍然在进行内部开发）和[lock-passwordless](https://github.com/auth0/lock-passwordless)项目中，Immutable.js已经有了它独一无二的使用方式。这两个库都是通过React来开发的。由于对相等判断的优化，使得用不可变数据来渲染React组件可以获得极大的性能提高：当两个对象有着相同的引用，并且都是不可变对象时，就能够确定其内部的数据没有发生改变。React取决于是否对象发生改变来重新渲染对象，不可变对象使得它没有了深度判断的必要。
+
+> 在Angular.js应用中也能使用相似的优化
+
+## 结论
+
+感谢函数式编程语言，它们将不可变和其它相关概念的优势都使用到了。在使用Clojure、Scala和Haskell等编程语言开发的项目逐渐发展起来之后，这些语言所大力提倡的相关概念带来了较高的占有率。不可变便是这些干点之一：对于分析、持久化、拷贝和比较来说都带来了显而易见的优势，不可变数据结构都有了自己的特殊使用情况，甚至已经运用在你的浏览器当中。与往常一样，当到了算法和数据结构中，就需要对不同情景的仔细分析，来选择正确的工具。基于性能、内存使用、CPU缓存行为以及对数据进行操作的形式的考虑都变得非常有必要，以便让你决定不可变是否适合你的情况。Immutable.js和React结合使用的例子便清晰地展示了其在项目中的巨大优势。
+
+如果这篇文章激起了你对于函数式编程和数据结构方面的兴趣，我就不得不强力推荐Chris Okasaki的[Purely Functional Data Structures](http://www.amazon.com/Purely-Functional-Structures-Chris-Okasaki/dp/0521663504/ref=sr_1_1?ie=UTF8&qid=1458699242&sr=8-1)。这是一本非常棒的书籍，介绍了函数式数据结构在这样场景下是如何工作的，以及如何有效地使用它们。
