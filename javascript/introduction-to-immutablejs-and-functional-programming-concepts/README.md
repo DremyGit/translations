@@ -1,4 +1,4 @@
-# Immutable.js介绍与函数式编程概念
+# Immutable.js与函数式编程概念介绍
 
 > 原文[Introduction to Immutable.js and Functional Programming Concepts](https://auth0.com/blog/2016/03/23/intro-to-immutable-js/)，作者Sebastián Peyrott
 
