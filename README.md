@@ -9,6 +9,7 @@
 1. [Introduction to Immutable.js and Functional Programming Concepts](https://github.com/DremyGit/translations/tree/master/javascript/introduction-to-immutablejs-and-functional-programming-concepts/README.md)（Immutable.js与函数式编程概念介绍）
 1. [React Best Practices](https://github.com/DremyGit/translations/tree/master/javascript/react-best-practices/README.md)（React最佳实践）
 1. [Why Redux makes sense to me and how I conceptualize it](https://github.com/DremyGit/translations/blob/master/javascript/why-redux-makes-sense-to-me-and-how-i-conceptualize-it/README.md)（对Redux的理解及类比）
+1. [Front end developers are software engineers, too](https://github.com/DremyGit/translations/blob/master/javascript/front-end-developers-are-software-engineers-too/README.md)（前端开发者也应该是工程师）
 
 ## 版权声明
 
